@@ -58,6 +58,10 @@
     <menuitem label='Administrativo'>
         <icon>fa:cog fa-fw</icon>
         <menu>
+              <menuitem label='Contas a Pagar'>
+                  <icon>fa:user fa-fw</icon>
+                  <action>PagarList</action>
+              </menuitem>
               <menuitem label='Contas a Receber'>
                   <icon>fa:user fa-fw</icon>
                   <action>ReceberList</action>

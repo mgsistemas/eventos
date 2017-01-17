@@ -1,10 +1,9 @@
 <?php
 /**
- * ReceberList Listing
- * @author  Marcelo Gomes
- * @package app/control/financeiro
+ * PagarList Listing
+ * @author  <your name here>
  */
-class ReceberList extends TPage
+class PagarList extends TPage
 {
     private $form; // form
     private $datagrid; // listing
@@ -22,39 +21,55 @@ class ReceberList extends TPage
         parent::__construct();
         
         // creates the form
-        $this->form = new TQuickForm('form_search_Receber');
+        $this->form = new TQuickForm('form_search_Pagar');
         $this->form->class = 'tform'; // change CSS class
         $this->form = new BootstrapFormWrapper($this->form);
         $this->form->style = 'display: table;width:100%'; // change style
-        $this->form->setFormTitle('Receber');
+        $this->form->setFormTitle('Pagar');
         $this->form->setFieldsByRow(2);
         
 
+        $criteria = new TCriteria;
+        $criteria->add(new TFilter('tipo','=','P'));
+        $criteria->add(new TFilter('situacao','=','A'));
+
         // create the form fields
-        $situacao = new TCombo('situacao');
-        $data_credito = new TDate('data_credito');
-        $data_credito_fim = new TDate('data_credito_fim');
         $empresa_id = new TDBCombo('empresa_id','eventos','Empresa','id','nome','nome');
-        $situacao->addItems(array('A'=>'Pendente','I'=>'Pago'));
-        $data_credito->setMask('dd/mm/yyyy');
+        $plano_conta_id = new TDBCombo('plano_conta_id','eventos','PlanoConta','id','descricao','descricao',$criteria);
+        $data_vencimento = new TDate('data_vencimento');
+        $data_vencimento_final = new TDate('data_vencimento_final');
+        $data_pagamento = new TDate('data_pagamento');
+        $data_pagamento_final = new TDate('data_pagamento_final');
+        $situacao = new TCheckGroup('situacao');
+        
+        $data_pagamento->setMask('dd/mm/yyyy');
+        $data_pagamento_final->setMask('dd/mm/yyyy');
+        $data_vencimento->setMask('dd/mm/yyyy');
+        $data_vencimento_final->setMask('dd/mn/yyyy');
+        
         $empresa_id->enableSearch();
-        $data_credito_fim->setMask('dd/mm/yyyy');
+        $plano_conta_id->enableSearch();
 
 
         // add the fields
-        $this->form->addQuickField('Situação', $situacao,  200 );
-        $this->form->addQuickField('Empresa Contábil', $empresa_id,  200 );
-        $this->form->addQuickField('Data Vencimento Inicial', $data_credito,  200 );
-        $this->form->addQuickField('Data Vencimento Final',$data_credito_fim, 200);
+        $this->form->addQuickField('Empresa Contábil', $empresa_id,  200);
+        $this->form->addQuickField('Plano Conta', $plano_conta_id,  200);
+        $this->form->addQuickField('Data Vencimento', $data_vencimento,  100);
+        $this->form->addQuickField('Data Vencimento Final', $data_vencimento_final, 100);
+        $this->form->addQuickField('Data Pagamento', $data_pagamento,  100);
+        $this->form->addQuickField('Data Pagamento Final', $data_pagamento_final,  100);
+        $this->form->addQuickField('Situação', $situacao,  100);
+        
+        $situacao->setLayout('horizontal');
+        $situacao->addItems(['A' => 'Pendente', 'I' => 'Pago']);
 
         
         // keep the form filled during navigation with session data
-        $this->form->setData( TSession::getValue('Receber_filter_data') );
+        $this->form->setData( TSession::getValue('Pagar_filter_data') );
         
         // add the search form actions
         $this->form->addQuickAction(_t('Find'), new TAction(array($this, 'onSearch')), 'fa:search');
-        $this->form->addQuickAction('Limpar Busca', new TAction(array($this, 'onNovaBusca')), 'fa:trash');
-        $this->form->addQuickAction(_t('New'),  new TAction(array('ReceberForm', 'onEdit')), 'bs:plus-sign green');
+        $this->form->addQuickAction(_t('New'),  new TAction(array('PagarForm', 'onEdit')), 'bs:plus-sign green');
         
         // creates a Datagrid
         $this->datagrid = new TDataGrid;
@@ -66,51 +81,34 @@ class ReceberList extends TPage
 
         // creates the datagrid columns
         $column_id = new TDataGridColumn('id', 'Id', 'right');
-        $column_data_lancamento = new TDataGridColumn('data_lancamento', 'Data Lancamento', 'center',100);
-        $column_cliente_id = new TDataGridColumn('cliente->razao_social', 'Cliente', 'left');
+        $column_data_vencimento = new TDataGridColumn('data_vencimento', 'Data Vencimento', 'center');
+        $column_fornecedor_id = new TDataGridColumn('fornecedor->razao_social', 'Fornecedor', 'left');
         $column_empresa_id = new TDataGridColumn('empresa->nome', 'Empresa', 'left');
-        $column_job_id = new TDataGridColumn('job_id', 'Job', 'center',80);
-        $column_tipo_cobranca_id = new TDataGridColumn('tipo_cobranca->descricao', 'Tipo Cobranca', 'left');
-        $column_data_credito = new TDataGridColumn('data_vencimento', 'Data Vencimento', 'center',100);
-        $column_situacao = new TDataGridColumn('situacao', 'Situacao', 'center');
+        $column_nota_fiscal = new TDataGridColumn('nota_fiscal', 'Nota Fiscal', 'center');
+        $column_job_id = new TDataGridColumn('job_id', 'Job', 'center');
+        $column_plano_conta_id = new TDataGridColumn('plano_conta->descricao', 'Plano Conta', 'left');
+        $column_tipo_controle_id = new TDataGridColumn('tipo_controle->descricao', 'Controle', 'left');
+        $column_valor = new TDataGridColumn('valor', 'Valor', 'right');
+        $column_data_pagamento = new TDataGridColumn('data_pagamento', 'Data Pagamento', 'center');
+        $column_situacao = new TDataGridColumn('situacao','Situação','center');
 
 
         // add the columns to the DataGrid
         $this->datagrid->addColumn($column_id);
-        $this->datagrid->addColumn($column_data_lancamento);
-        $this->datagrid->addColumn($column_cliente_id);
+        $this->datagrid->addColumn($column_data_vencimento);
+        $this->datagrid->addColumn($column_fornecedor_id);
         $this->datagrid->addColumn($column_empresa_id);
+        $this->datagrid->addColumn($column_nota_fiscal);
         $this->datagrid->addColumn($column_job_id);
-        $this->datagrid->addColumn($column_tipo_cobranca_id);
-        $this->datagrid->addColumn($column_data_credito);
+        $this->datagrid->addColumn($column_plano_conta_id);
+        $this->datagrid->addColumn($column_tipo_controle_id);
+        $this->datagrid->addColumn($column_valor);
+        $this->datagrid->addColumn($column_data_pagamento);
         $this->datagrid->addColumn($column_situacao);
 
         
-        // transformer
-        $column_data_lancamento->setTransformer(function($value, $object, $row){
-            $data = new DateTime($value);
-            return $data->format('d/m/Y');
-        });
-        
-        $column_data_credito->setTransformer(function($value, $object, $row){
-            $data = new DateTime($value);
-            return $data->format('d/m/Y');
-        });
-        
-        $column_situacao->setTransformer(function($value, $object, $row){
-            $lbl = new TLabel('');
-            if ($value == 'A'){
-                $lbl->setValue('Pendente');
-                $lbl->class = 'label label-danger';
-            } else {
-                $lbl->setValue('Pago');
-                $lbl->class = 'label label-success';
-            }
-            return $lbl;
-        });
-        
         // create EDIT action
-        $action_edit = new TDataGridAction(array('ReceberForm', 'onEdit'));
+        $action_edit = new TDataGridAction(array('PagarForm', 'onEdit'));
         $action_edit->setUseButton(TRUE);
         $action_edit->setButtonClass('btn btn-default');
         $action_edit->setLabel(_t('Edit'));
@@ -141,25 +139,11 @@ class ReceberList extends TPage
         $container = new TVBox;
         $container->style = 'width: 90%';
         $container->add(new TXMLBreadCrumb('menu.xml', __CLASS__));
-        $container->add(TPanelGroup::pack('Lista de Contas a Receber', $this->form));
+        $container->add(TPanelGroup::pack('Lista de Contas a Pagar', $this->form));
         $container->add($this->datagrid);
         $container->add($this->pageNavigation);
         
         parent::add($container);
-    }
-    
-    /**
-     * Limpar form e recarregar a grid
-     */
-    public function onNovaBusca($param)
-    {
-        $data = $this->form->getData();
-        $data->situacao = "";
-        $data->empresa_id = "";
-        $data->data_credito = "";
-        $data->data_credito_fim = "";
-        $this->form->setData($data);
-        $this->onSearch();
     }
     
     /**
@@ -179,7 +163,7 @@ class ReceberList extends TPage
             $value = $param['value'];
             
             TTransaction::open('eventos'); // open a transaction with database
-            $object = new Receber($key); // instantiates the Active Record
+            $object = new Pagar($key); // instantiates the Active Record
             $object->{$field} = $value;
             $object->store(); // update the object in the database
             TTransaction::close(); // close the transaction
@@ -203,39 +187,57 @@ class ReceberList extends TPage
         $data = $this->form->getData();
         
         // clear session filters
-        TSession::setValue('ReceberList_filter_situacao',   NULL);
-        TSession::setValue('ReceberList_filter_data_credito',   NULL);
-        TSession::setValue('ReceberList_filter_empresa_id',   NULL);
-        TSession::setValue('ReceberList_filter_data_credito_fim', NULL);
-
-        if (isset($data->situacao) AND ($data->situacao)) {
-            $filter = new TFilter('situacao', '=', "$data->situacao"); // create the filter
-            TSession::setValue('ReceberList_filter_situacao',   $filter); // stores the filter in the session
-        }
-
-
-        if (isset($data->data_credito) AND ($data->data_credito)) {
-            $filter = new TFilter('data_vencimento', '>=', TDate::date2us($data->data_credito)); // create the filter
-            TSession::setValue('ReceberList_filter_data_credito',   $filter); // stores the filter in the session
-        }
- 
-        if (isset($data->data_credito_fim) AND ($data->data_credito_fim)) {
-        
-            $filter = new TFilter('data_vencimento', '<=', TDate::date2us($data->data_credito_fim)); // create the filter
-            TSession::setValue('ReceberList_filter_data_credito_fim',   $filter); // stores the filter in the session
-        }
+        TSession::setValue('PagarList_filter_empresa_id',   NULL);
+        TSession::setValue('PagarList_filter_plano_conta_id',   NULL);
+        TSession::setValue('PagarList_filter_data_vencimento',   NULL);
+        TSession::setValue('PagarList_filter_data_pagamento',   NULL);
 
         if (isset($data->empresa_id) AND ($data->empresa_id)) {
             $filter = new TFilter('empresa_id', '=', "$data->empresa_id"); // create the filter
-            TSession::setValue('ReceberList_filter_empresa_id',   $filter); // stores the filter in the session
+            TSession::setValue('PagarList_filter_empresa_id',   $filter); // stores the filter in the session
         }
 
+
+        if (isset($data->plano_conta_id) AND ($data->plano_conta_id)) {
+            $filter = new TFilter('plano_conta_id', '=', "$data->plano_conta_id"); // create the filter
+            TSession::setValue('PagarList_filter_plano_conta_id',   $filter); // stores the filter in the session
+        }
+
+
+        if (isset($data->data_vencimento) AND ($data->data_vencimento)) {
+            $dataV = TDate::date2us($data->data_vencimento);
+            $filter = new TFilter('data_vencimento', '>=', "$dataV"); // create the filter
+            TSession::setValue('PagarList_filter_data_vencimento',   $filter); // stores the filter in the session
+        }
+
+        if (isset($data->data_vencimento_final) AND ($data->data_vencimento_final)) {
+            $dataVF = TDate::date2us($data->data_vencimento_final);
+            $filter = new TFilter('data_vencimento_final', '<=', "$dataVF"); // create the filter
+            TSession::setValue('PagarList_filter_data_vencimento_final',   $filter); // stores the filter in the session
+        }
+
+        if (isset($data->data_pagamento) AND ($data->data_pagamento)) {
+            $dataP = TDate::date2us($data->data_pagamento);
+            $filter = new TFilter('data_pagamento', '=', "$dataP"); // create the filter
+            TSession::setValue('PagarList_filter_data_pagamento',   $filter); // stores the filter in the session
+        }
+
+        if (isset($data->data_pagamento_final) AND ($data->data_pagamento_final)) {
+            $dataPF = TDate::date2us($data->data_pagamento_final);
+            $filter = new TFilter('data_pagamento_final', '<=', "$dataPF"); // create the filter
+            TSession::setValue('PagarList_filter_data_pagamento_final',   $filter); // stores the filter in the session
+        }
+        
+        if (isset($data->situacao) AND ($data->situacao)) {
+            $filter = new TFilter('situacao', '=', "$data->situacao"); // create the filter
+            TSession::setValue('PagarList_filter_data_situacao',   $filter); // stores the filter in the session
+        }
         
         // fill the form with data again
         $this->form->setData($data);
         
         // keep the search data in the session
-        TSession::setValue('Receber_filter_data', $data);
+        TSession::setValue('Pagar_filter_data', $data);
         
         $param=array();
         $param['offset']    =0;
@@ -253,8 +255,8 @@ class ReceberList extends TPage
             // open a transaction with database 'eventos'
             TTransaction::open('eventos');
             
-            // creates a repository for Receber
-            $repository = new TRepository('Receber');
+            // creates a repository for Pagar
+            $repository = new TRepository('Pagar');
             $limit = 10;
             // creates a criteria
             $criteria = new TCriteria;
@@ -269,24 +271,35 @@ class ReceberList extends TPage
             $criteria->setProperty('limit', $limit);
             
 
-            if (TSession::getValue('ReceberList_filter_situacao')) {
-                $criteria->add(TSession::getValue('ReceberList_filter_situacao')); // add the session filter
+            if (TSession::getValue('PagarList_filter_empresa_id')) {
+                $criteria->add(TSession::getValue('PagarList_filter_empresa_id')); // add the session filter
             }
 
 
-            if (TSession::getValue('ReceberList_filter_data_credito')) {
-                $criteria->add(TSession::getValue('ReceberList_filter_data_credito')); // add the session filter
+            if (TSession::getValue('PagarList_filter_plano_conta_id')) {
+                $criteria->add(TSession::getValue('PagarList_filter_plano_conta_id')); // add the session filter
             }
 
-            if (TSession::getValue('ReceberList_filter_data_credito_fim')) {
-                $criteria->add(TSession::getValue('ReceberList_filter_data_credito_fim')); // add the session filter
+
+            if (TSession::getValue('PagarList_filter_data_vencimento')) {
+                $criteria->add(TSession::getValue('PagarList_filter_data_vencimento')); // add the session filter
             }
 
-            if (TSession::getValue('ReceberList_filter_empresa_id')) {
-                $criteria->add(TSession::getValue('ReceberList_filter_empresa_id')); // add the session filter
+            if (TSession::getValue('PagarList_filter_data_vencimento_final')) {
+                $criteria->add(TSession::getValue('PagarList_filter_data_vencimento_final')); // add the session filter
             }
 
-            //var_dump($criteria);
+            if (TSession::getValue('PagarList_filter_data_pagamento')) {
+                $criteria->add(TSession::getValue('PagarList_filter_data_pagamento')); // add the session filter
+            }
+
+            if (TSession::getValue('PagarList_filter_data_pagamento_final')) {
+                $criteria->add(TSession::getValue('PagarList_filter_data_pagamento_final')); // add the session filter
+            }
+            
+            if (TSession::getValue('PagarList_filter_data_situacao')) {
+                $criteria->add(TSession::getValue('PagarList_filter_data_situacao')); // add the session filter
+            }
             
             // load the objects according to criteria
             $objects = $repository->load($criteria, FALSE);
@@ -350,7 +363,7 @@ class ReceberList extends TPage
         {
             $key=$param['key']; // get the parameter $key
             TTransaction::open('eventos'); // open a transaction with database
-            $object = new Receber($key, FALSE); // instantiates the Active Record
+            $object = new Pagar($key, FALSE); // instantiates the Active Record
             $object->delete(); // deletes the object from the database
             TTransaction::close(); // close the transaction
             $this->onReload( $param ); // reload the listing

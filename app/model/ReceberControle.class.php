@@ -28,4 +28,32 @@ class ReceberControle extends TRecord
     }
 
 
+
+    /**
+     * Method set_tipo_controle
+     * Sample of usage: $receber->tipo_controle = $object;
+     * @param $object Instance of TipoControle
+     */
+    public function set_tipo_controle(TipoControle $object)
+    {
+        $this->tipo_controle = $object;
+        $this->tipo_controle_id = $object->id;
+    }
+    
+    /**
+     * Method get_tipo_controle
+     * Sample of usage: $receber->tipo_controle->attribute;
+     * @returns TipoControle instance
+     */
+    public function get_tipo_controle()
+    {
+        // loads the associated object
+        if (empty($this->tipo_controle))
+            $this->tipo_controle = new TipoControle($this->tipo_controle_id);
+    
+        // returns the associated object
+        return $this->tipo_controle;
+    }
+
+
 }

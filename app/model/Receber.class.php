@@ -13,7 +13,6 @@ class Receber extends TRecord
     private $cliente;
     private $tipo_cobranca;
     private $plano_conta;
-    private $receber_controles;
     private $empresa;
 
     /**
@@ -32,6 +31,7 @@ class Receber extends TRecord
         parent::addAttribute('empresa_id');
         parent::addAttribute('codigo_barras');
         parent::addAttribute('data_pagamento');
+        parent::addAttribute('data_vencimento');
         parent::addAttribute('observacao');
         parent::addAttribute('situacao');
         parent::addAttribute('login');
@@ -120,25 +120,6 @@ class Receber extends TRecord
     }
     
     
-    /**
-     * Method addReceberControle
-     * Add a ReceberControle to the Receber
-     * @param $object Instance of ReceberControle
-     */
-    public function addReceberControle(ReceberControle $object)
-    {
-        $this->receber_controles[] = $object;
-    }
-    
-    /**
-     * Method getReceberControles
-     * Return the Receber' ReceberControle's
-     * @return Collection of ReceberControle
-     */
-    public function getReceberControles()
-    {
-        return $this->receber_controles;
-    }
     
     /**
      * Method set_empresa
@@ -151,6 +132,7 @@ class Receber extends TRecord
         $this->empresa_id = $object->id;
     }
     
+
     /**
      * Method get_empresa
      * Sample of usage: $receber->empresa->attribute;
@@ -167,13 +149,35 @@ class Receber extends TRecord
     }
     
 
+
     /**
-     * Reset aggregates
+     * Method set_job
+     * Sample of usage: $receber->job = $object;
+     * @param $object Instance of Empresa
      */
-    public function clearParts()
+    public function set_job(Job $object)
     {
-        $this->receber_controles = array();
+        $this->job = $object;
+        $this->job_id = $object->id;
     }
+    
+
+    /**
+     * Method get_job
+     * Sample of usage: $receber->job->attribute;
+     * @returns Job instance
+     */
+    public function get_job()
+    {
+        // loads the associated object
+        if (empty($this->job))
+            $this->job = new Job($this->job_id);
+    
+        // returns the associated object
+        return $this->job;
+    }
+
+
 
     /**
      * Load the object and its aggregates
@@ -181,13 +185,6 @@ class Receber extends TRecord
      */
     public function load($id)
     {
-    
-        // load the related ReceberControle objects
-        $repository = new TRepository('ReceberControle');
-        $criteria = new TCriteria;
-        $criteria->add(new TFilter('receber_id', '=', $id));
-        $this->receber_controles = $repository->load($criteria);
-    
         // load the object itself
         return parent::load($id);
     }
@@ -200,21 +197,6 @@ class Receber extends TRecord
         // store the object itself
         parent::store();
     
-        // delete the related ReceberControle objects
-        $criteria = new TCriteria;
-        $criteria->add(new TFilter('receber_id', '=', $this->id));
-        $repository = new TRepository('ReceberControle');
-        $repository->delete($criteria);
-        // store the related ReceberControle objects
-        if ($this->receber_controles)
-        {
-            foreach ($this->receber_controles as $receber_controle)
-            {
-                unset($receber_controle->id);
-                $receber_controle->receber_id = $this->id;
-                $receber_controle->store();
-            }
-        }
     }
 
     /**
@@ -224,12 +206,6 @@ class Receber extends TRecord
     public function delete($id = NULL)
     {
         $id = isset($id) ? $id : $this->id;
-        // delete the related ReceberControle objects
-        $repository = new TRepository('ReceberControle');
-        $criteria = new TCriteria;
-        $criteria->add(new TFilter('receber_id', '=', $id));
-        $repository->delete($criteria);
-        
     
         // delete the object itself
         parent::delete($id);

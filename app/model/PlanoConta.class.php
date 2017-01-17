@@ -19,6 +19,7 @@ class PlanoConta extends TRecord
     {
         parent::__construct($id, $callObjectLoad);
         parent::addAttribute('plano_conta_macro_id');
+        parent::addAttribute('codigo_conta');
         parent::addAttribute('descricao');
         parent::addAttribute('tipo');
         parent::addAttribute('situacao');
@@ -26,6 +27,12 @@ class PlanoConta extends TRecord
         parent::addAttribute('data_atualizacao');
     }
 
+
+    public function get_descricao_plano_conta()
+    {
+        $retorno = $this->codigo_conta . ' - ' . $this->descricao;
+        return $retorno;
+    }
     
     /**
      * Method set_plano_conta_macro
